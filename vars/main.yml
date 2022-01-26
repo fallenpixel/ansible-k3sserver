@@ -1,0 +1,3 @@
+---
+# vars file for server
+k3s_installer_options: "server"

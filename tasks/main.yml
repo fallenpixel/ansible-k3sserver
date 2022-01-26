@@ -1,0 +1,45 @@
+---
+#  tasks file for server
+- name: Install K3S
+  ansible.builtin.command:
+    argv:
+      - /home/{{ ansible_user }}/k3s_installer
+      - "{{ k3s_installer_options }}"
+    creates: "/var/lib/rancher/k3s/server/node-token"
+- name: Make token storage directory
+  ansible.builtin.file:
+    path: data
+    state: directory
+    mode: "0700"
+  connection: local
+  vars:
+    ansible_python_interpreter: /usr/bin/python
+- name: Get Token
+  ansible.builtin.fetch:
+    src: "/var/lib/rancher/k3s/server/node-token"
+    dest: "data/node-token"
+    flat: true
+  become: true
+- name: Download Helm Installer
+  ansible.builtin.get_url:
+    url: "https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3"
+    dest: "/home/{{ ansible_user }}/helm_installer"
+    mode: "0700"
+- name: Install helm
+  ansible.builtin.command:
+    argv: "/home/{{ ansible_user }}/helm_installer"
+    creates: "/usr/local/bin/helm"
+- name: Create .kube
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/.kube"
+    state: directory
+    mode: "0700"
+- name: Copy Config
+  ansible.builtin.copy:
+    remote_src: true
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: "/home/{{ ansible_user }}/.kube/config"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0600"
+  become: true
